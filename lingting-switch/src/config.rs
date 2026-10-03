@@ -53,8 +53,22 @@ fn convert(key: &str, source: &str) -> Result<PathBuf> {
         bail!("[{key}] 不是目录: {trim}");
     }
 
-    println!("[{key}] 使用路径: {}", canonicalize.display());
-    Ok(canonicalize)
+    let simplified = simplify(&canonicalize);
+    println!("[{key}] 使用路径: {}", simplified.display());
+    Ok(simplified)
+}
+
+/// 去掉 Windows 扩展长度前缀，避免把 \\?\ 写入配置或链接目标
+fn simplify(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{rest}"));
+    }
+
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) => PathBuf::from(rest),
+        None => path.to_path_buf(),
+    }
 }
 
 fn is_directory(path: &Path) -> bool {
