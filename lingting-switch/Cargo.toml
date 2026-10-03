@@ -1,0 +1,23 @@
+[package]
+name = "lingting-switch"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+lingting-tools-core.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+jsonc-parser.workspace = true
+serde_json.workspace = true
+toml_edit.workspace = true
+tree-sitter.workspace = true
+tree-sitter-typescript.workspace = true
+yaml-rust2.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true

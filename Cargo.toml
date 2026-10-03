@@ -1,0 +1,89 @@
+[workspace]
+resolver = "2"
+members = [
+    "lingting-switch",
+    "lingting-tools-core",
+]
+
+[workspace.package]
+version = "26.8.150"
+edition = "2024"
+rust-version = "1.98.0"
+authors = ["lingting"]
+description = "lingting tools"
+license = "MIT"
+repository = "https://github.com/lingting-projects/lingting-rust-tools"
+
+[workspace.dependencies]
+lingting-tools-core = { path = "lingting-tools-core" }
+
+clap = { version = "4.6", features = ["derive"] }
+jsonc-parser = "0.34"
+toml_edit = "0.25"
+tree-sitter = "0.27"
+tree-sitter-typescript = "0.23"
+yaml-rust2 = "0.13"
+
+framework-core = { version = "26.8.150" }
+framework-datetime = { version = "26.8.150" }
+framework-region = { version = "26.8.150" }
+framework-proc-auto = { version = "26.8.150" }
+framework-proc-core = { version = "26.8.150" }
+framework-proc-ts = { version = "26.8.150" }
+framework-proc-web = { version = "26.8.150" }
+framework-web = { version = "26.8.150" }
+framework-web-axum = { version = "26.8.150" }
+
+aes = { version = "0.8" }
+base64 = { version = "0.22" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_with = { version = "3.21" }
+specta = { version = "=2.0.0-rc.25", features = ["derive", "function", "bytes"] }
+specta-typescript = { version = "0.0.12" }
+specta-serde = { version = "0.0.12" }
+strum = { version = "0.28" }
+strum_macros = { version = "0.28" }
+blake3 = { version = "1.8" }
+url = { version = "2.5", features = ["serde"] }
+tokio = { version = "1.52", features = ["rt-multi-thread", "sync", "time", "macros"] }
+axum = { version = "0.8" }
+anyhow = "1.0"
+regex = { version = "1.12" }
+chrono = { version = "0.4" }
+log = { version = "0.4" }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-log = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+bytes = { version = "1.11" }
+flate2 = { version = "1.1" }
+cbc = { version = "0.1" }
+cipher = { version = "0.4" }
+rand = { version = "0.8" }
+hmac = { version = "0.12" }
+sha1 = { version = "0.10" }
+md-5 = { version = "0.10" }
+wreq = { version = "0.16", features = ["socks"] }
+rsntp = { version = "4.1", default-features = false }
+sha2 = { version = "0.10" }
+async-trait = { version = "0.1" }
+arc-swap = { version = "1.8" }
+dashmap = { version = "6.1" }
+cef = { version = "149.3.0" }
+tao = { version = "0.35" }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_UI_WindowsAndMessaging"] }
+sqlx = { version = "0.8", default-features = false, features = ["any", "json", "macros", "postgres", "runtime-tokio-rustls", "sqlite"] }
+proc-macro2 = { version = "1.0" }
+quote = { version = "1.0" }
+syn = { version = "2.0", features = ["full"] }
+inventory = "0.3"
+futures-util = "0.3"
+
+[profile.release]
+# 体积优先：发布产物以最小体积为目标
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
