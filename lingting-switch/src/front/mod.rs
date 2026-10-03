@@ -116,7 +116,7 @@ pub fn apply(item: &FrontPlanItem, directorys: &LocalDirectorys) -> Result<()> {
             tsconfig::switch(&tsconfig_path, item.target)?;
             pnpm_workspace::ensure_excluded(&directory.join("pnpm-workspace.yaml"), LRI_PACKAGE)?;
             junction::remove_link(&link, &directorys.lri)?;
-            command::inherit(directory, "pnpm install")?;
+            command::shell_inherit(directory, "pnpm install")?;
         }
     }
 
@@ -138,7 +138,7 @@ fn run_check(directory: &Path, after_apply: bool) -> Result<()> {
     let stage = if after_apply { "应用后" } else { "前置" };
     println!("[前端{stage}校验] {line}  ({})", directory.display());
 
-    command::inherit(directory, &line)
+    command::shell_inherit(directory, &line)
 }
 
 /// 校验命令：存在 lint script 时优先使用；改写前遇到会写回文件的命令时退回只读等价命令

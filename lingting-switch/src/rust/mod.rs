@@ -135,7 +135,7 @@ pub fn verify(items: &[RustPlanItem]) -> Result<()> {
             .join(" ");
         let line = format!("cargo check {packages}");
         println!("[Rust 校验] {line}  ({})", root.display());
-        command::inherit(root, &line)?;
+        command::shell_inherit(root, &line)?;
     }
 
     Ok(())
@@ -159,7 +159,7 @@ fn group(groups: &mut Vec<(PathBuf, Vec<String>)>, root: PathBuf) -> usize {
 
 /// 通过 cargo metadata 获取 workspace root
 fn workspace_root(directory: &Path) -> Result<PathBuf> {
-    let output = command::capture(directory, "cargo metadata --format-version 1")?;
+    let output = command::shell_capture(directory, "cargo metadata --format-version 1")?;
     let metadata: Value = serde_json::from_str(&output).context("cargo metadata 输出解析失败")?;
     let root = metadata
         .get("workspace_root")

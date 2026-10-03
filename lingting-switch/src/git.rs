@@ -6,7 +6,7 @@ use crate::command;
 
 /// 确认运行目录位于 Git 仓库内，并返回仓库根目录
 pub fn repository_root(startup: &Path) -> Result<PathBuf> {
-    let output = command::capture(startup, "git rev-parse --show-toplevel")
+    let output = command::run(startup, "git", &["rev-parse", "--show-toplevel"])
         .with_context(|| format!("{} 不在 Git 仓库内", startup.display()))?;
     let root = output.trim();
     if root.is_empty() {
@@ -23,12 +23,12 @@ pub fn ensure_ready(root: &Path, files: &[PathBuf]) -> Result<()> {
             .to_string_lossy()
             .replace('\\', "/");
 
-        let status = command::capture(root, &format!("git status --porcelain -- \"{name}\""))?;
+        let status = command::run(root, "git", &["status", "--porcelain", "--", &name])?;
         if !status.trim().is_empty() {
             bail!("目标文件存在未提交变更，已停止: {name}");
         }
 
-        let history = command::capture(root, &format!("git log -1 --format=%H -- \"{name}\""))?;
+        let history = command::run(root, "git", &["log", "-1", "--format=%H", "--", &name])?;
         if history.trim().is_empty() {
             bail!("目标文件没有 Git 提交记录，已停止: {name}");
         }
