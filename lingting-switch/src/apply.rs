@@ -12,6 +12,9 @@ pub fn run(plan: &Plan, directorys: &LocalDirectorys) -> Result<()> {
         rust::cargo_file::apply(&item.file, item.target, &item.deps)?;
     }
 
+    // 改写后重新检查，使 Cargo.lock 与新配置保持一致
+    rust::verify_applied(&plan.rust)?;
+
     for item in &plan.front {
         println!("[Apply] {} → {}", item.directory.display(), item.target);
         front::apply(item, directorys)?;
