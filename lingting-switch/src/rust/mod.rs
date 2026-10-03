@@ -109,17 +109,8 @@ pub fn plan(
     Ok(items)
 }
 
-/// Rust 侧前置校验：cargo check -p <framework 依赖名>
+/// 应用后校验：cargo check -p <framework 依赖名>，使 Cargo.lock 与新配置保持一致
 pub fn verify(items: &[RustPlanItem]) -> Result<()> {
-    check(items, false)
-}
-
-/// Rust 侧应用后校验：重新检查并让 Cargo.lock 与新配置保持一致
-pub fn verify_applied(items: &[RustPlanItem]) -> Result<()> {
-    check(items, true)
-}
-
-fn check(items: &[RustPlanItem], after_apply: bool) -> Result<()> {
     let mut groups: Vec<(PathBuf, Vec<String>)> = vec![];
     for item in items {
         let directory = item
@@ -143,8 +134,7 @@ fn check(items: &[RustPlanItem], after_apply: bool) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
         let line = format!("cargo check {packages}");
-        let stage = if after_apply { "应用后" } else { "前置" };
-        println!("[Rust {stage}校验] {line}  ({})", root.display());
+        println!("[Rust 校验] {line}  ({})", root.display());
         command::shell_inherit(root, &line)?;
     }
 

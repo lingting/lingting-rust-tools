@@ -40,11 +40,6 @@ impl PackageJson {
             .unwrap_or_default()
     }
 
-    /// scripts 中的命令
-    pub fn script(&self, name: &str) -> Option<&str> {
-        self.object("scripts")?.get(name)?.as_str()
-    }
-
     fn object(&self, key: &str) -> Option<&Map<String, Value>> {
         self.value.get(key).and_then(Value::as_object)
     }

@@ -29,6 +29,9 @@ const REQUIRED: [&str; 4] = [
     "tsconfig.json",
 ];
 
+/// vp fmt 可以格式化的文件扩展名
+const FORMAT_EXTENSIONS: [&str; 3] = ["ts", "tsx", "json"];
+
 /// 收集运行目录及一级子目录下的前端项目
 pub fn discover(startup: &Path) -> Result<Vec<PathBuf>> {
     let mut projects = vec![];
@@ -108,7 +111,7 @@ pub fn apply(item: &FrontPlanItem, directorys: &LocalDirectorys) -> Result<()> {
             tsconfig::switch(&tsconfig_path, item.target)?;
             config.switch_to_local(&package.peer_dependencies())?;
         }
-        // 切换为依赖模式：改写配置后删除 Junction 并安装依赖
+        // 切换为依赖模式：改写配置后删除 Junction
         Mode::Dependency => {
             let version = package.version()?;
             package_json::set_dependency(&directory.join("package.json"), LRI_PACKAGE, &version)?;
@@ -116,65 +119,43 @@ pub fn apply(item: &FrontPlanItem, directorys: &LocalDirectorys) -> Result<()> {
             tsconfig::switch(&tsconfig_path, item.target)?;
             pnpm_workspace::ensure_excluded(&directory.join("pnpm-workspace.yaml"), LRI_PACKAGE)?;
             junction::remove_link(&link, &directorys.lri)?;
-            command::shell_inherit(directory, "pnpm install")?;
         }
     }
 
-    verify_applied(item)
+    after_apply(item)
 }
 
-/// 前端前置校验：改写前执行，只能使用只读命令
-pub fn verify(item: &FrontPlanItem) -> Result<()> {
-    run_check(&item.directory, false)
-}
+/// 应用后操作：安装依赖，并只格式化本次修改的文件
+fn after_apply(item: &FrontPlanItem) -> Result<()> {
+    let directory = &item.directory;
+    println!("[前端安装] pnpm install  ({})", directory.display());
+    command::shell_inherit(directory, "pnpm install")?;
 
-/// 前端应用后校验：改写后执行，使用项目自身命令，允许其顺带格式化
-pub fn verify_applied(item: &FrontPlanItem) -> Result<()> {
-    run_check(&item.directory, true)
-}
-
-fn run_check(directory: &Path, after_apply: bool) -> Result<()> {
-    let line = command_line(directory, after_apply)?;
-    let stage = if after_apply { "应用后" } else { "前置" };
-    println!("[前端{stage}校验] {line}  ({})", directory.display());
-
-    command::shell_inherit(directory, &line)
-}
-
-/// 校验命令：存在 lint script 时优先使用；改写前遇到会写回文件的命令时退回只读等价命令
-fn command_line(directory: &Path, after_apply: bool) -> Result<String> {
-    let package = package_json::PackageJson::read(&directory.join("package.json"))?;
-    match package.script("lint") {
-        Some(script) if after_apply || !writes_files(script) => Ok("pnpm lint".to_string()),
-        _ => Ok(vite_plus_command(!after_apply)),
+    let files = format_files(item);
+    if !files.is_empty() {
+        let line = format!("pnpm exec vp fmt {files}");
+        println!("[前端格式化] {line}  ({})", directory.display());
+        command::shell_inherit(directory, &line)?;
     }
+
+    Ok(())
 }
 
-/// vite-plus 的格式、lint 与类型检查命令链
-fn vite_plus_command(read_only: bool) -> String {
-    let format = if read_only {
-        "vp fmt --check"
-    } else {
-        "vp fmt"
-    };
-
-    format!("pnpm exec {format} && pnpm exec vp lint && pnpm exec tsc --noEmit")
-}
-
-/// 判断命令组合是否会写回文件
-fn writes_files(script: &str) -> bool {
-    script.split("&&").any(|command| {
-        let command = command.trim();
-        command.contains("--fix")
-            || command.contains("--write")
-            || (is_formatter(command) && !command.contains("--check"))
-    })
-}
-
-fn is_formatter(command: &str) -> bool {
-    ["vp fmt", "vp format", "vp check", "oxfmt", "prettier"]
+/// 本次修改涉及的文件名，仅保留格式化工具可处理的扩展名
+fn format_files(item: &FrontPlanItem) -> String {
+    item.files
         .iter()
-        .any(|name| command.starts_with(name))
+        .filter(|file| is_formattable(file))
+        .filter_map(|file| file.file_name())
+        .map(|name| name.to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn is_formattable(file: &Path) -> bool {
+    file.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| FORMAT_EXTENSIONS.contains(&extension))
 }
 
 fn push_project(projects: &mut Vec<PathBuf>, directory: &Path) {

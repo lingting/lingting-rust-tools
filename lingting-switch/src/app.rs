@@ -10,7 +10,7 @@ use crate::git;
 use crate::plan::Plan;
 use crate::rust;
 
-/// 执行完整流程：Plan → Validate → Apply
+/// 执行完整流程：Plan → Git 检查 → Apply
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     let local = config::local_directorys()?;
@@ -35,10 +35,6 @@ pub fn run() -> Result<()> {
     }
 
     git::ensure_ready(&root, &plan.files())?;
-    rust::verify(&plan.rust)?;
-    for item in &plan.front {
-        front::verify(item)?;
-    }
 
     plan.print(&startup);
     if !cli.yes && !confirm()? {
