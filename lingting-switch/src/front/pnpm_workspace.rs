@@ -19,7 +19,8 @@ pub fn excluded(path: &Path, name: &str) -> Result<bool> {
 pub fn ensure_excluded(path: &Path, name: &str) -> Result<bool> {
     match &load(path)?[KEY] {
         Yaml::Array(items) if contains(items, name) => return Ok(false),
-        Yaml::Array(_) | Yaml::Null => {}
+        // 键不存在时为 BadValue，与空值一样按新增处理
+        Yaml::Array(_) | Yaml::Null | Yaml::BadValue => {}
         other => bail!("{KEY} 不是序列: {other:?}"),
     }
 
