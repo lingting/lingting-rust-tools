@@ -183,27 +183,29 @@ mod platform {
     fn mount_point(target: &Path) -> Result<Vec<u8>> {
         let substitute = wide(OsStr::new(&format!("{DEVICE_PREFIX}{}", target.display())));
         let print = wide(target.as_os_str());
-        let substitute_bytes = (substitute.len() + 1) * 2;
-        let print_bytes = (print.len() + 1) * 2;
+        // 名称长度不含结尾的 NUL，与系统写入的 Junction 保持一致
+        let substitute_bytes = (substitute.len() - 1) * 2;
+        let print_bytes = (print.len() - 1) * 2;
         if substitute_bytes > u16::MAX as usize || print_bytes > u16::MAX as usize {
             bail!("路径过长: {}", target.display());
         }
 
-        let data_length = 8 + substitute_bytes + print_bytes;
+        // 两个名称后各有一个 NUL，数据区包含这两个 NUL
+        let data_length = 8 + substitute_bytes + 2 + print_bytes + 2;
         let mut buffer = vec![0u8; 8 + data_length];
         buffer[0..4].copy_from_slice(&TAG_MOUNT_POINT.to_ne_bytes());
         buffer[4..6].copy_from_slice(&(data_length as u16).to_ne_bytes());
         buffer[8..10].copy_from_slice(&0u16.to_ne_bytes());
         buffer[10..12].copy_from_slice(&(substitute_bytes as u16).to_ne_bytes());
-        buffer[12..14].copy_from_slice(&(substitute_bytes as u16).to_ne_bytes());
+        buffer[12..14].copy_from_slice(&((substitute_bytes + 2) as u16).to_ne_bytes());
         buffer[14..16].copy_from_slice(&(print_bytes as u16).to_ne_bytes());
 
         let mut offset = 16;
-        for unit in substitute.iter().copied().chain(once(0u16)) {
+        for unit in substitute.iter().copied() {
             buffer[offset..offset + 2].copy_from_slice(&unit.to_ne_bytes());
             offset += 2;
         }
-        for unit in print.iter().copied().chain(once(0u16)) {
+        for unit in print.iter().copied() {
             buffer[offset..offset + 2].copy_from_slice(&unit.to_ne_bytes());
             offset += 2;
         }
