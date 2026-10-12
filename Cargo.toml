@@ -80,6 +80,12 @@ syn = { version = "2.0", features = ["full"] }
 inventory = "0.3"
 futures-util = "0.3"
 
+[profile.dev]
+# 调试构建：保留全部调试信息与异常回溯能力，供 deploy.sh -d 发布非 release 包
+debug = "full"
+strip = false
+panic = "unwind"
+
 [profile.release]
 # 体积优先：发布产物以最小体积为目标
 opt-level = "z"
