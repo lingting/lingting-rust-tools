@@ -82,7 +82,7 @@ pub fn plan(
             }
 
             let value = match target {
-                Mode::Local => local_path(directorys, &dep.name)?,
+                Mode::Local => local_path(directorys, &dep.name, &file)?,
                 Mode::Dependency => framework::version(&directorys.framework, &dep.name)?,
             };
 
@@ -141,10 +141,46 @@ pub fn verify(items: &[RustPlanItem]) -> Result<()> {
     Ok(())
 }
 
-/// 本地模式下依赖的 path 值
-fn local_path(directorys: &LocalDirectorys, name: &str) -> Result<String> {
+/// 本地模式下依赖的 path 值：相对 Cargo.toml 所在目录，无法相对化时退回绝对路径
+fn local_path(directorys: &LocalDirectorys, name: &str, file: &Path) -> Result<String> {
     let directory = framework::ensure_package(&directorys.framework, name)?;
-    Ok(directory.to_string_lossy().replace('\\', "/"))
+    let base = file
+        .parent()
+        .with_context(|| format!("{} 没有上级目录", file.display()))?;
+    let path = relative_path(base, &directory).unwrap_or(directory);
+    Ok(path.to_string_lossy().replace('\\', "/"))
+}
+
+/// base 到 target 的相对路径，两者根前缀不同（例如 Windows 下跨盘符）时返回 None
+fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
+    let base = base.canonicalize().ok()?;
+    let target = target.canonicalize().ok()?;
+    let base = base.components().collect::<Vec<_>>();
+    let target = target.components().collect::<Vec<_>>();
+
+    if base.first() != target.first() {
+        return None;
+    }
+
+    let common = base
+        .iter()
+        .zip(target.iter())
+        .take_while(|(left, right)| left == right)
+        .count();
+
+    let mut path = PathBuf::new();
+    for _ in common..base.len() {
+        path.push("..");
+    }
+    for component in &target[common..] {
+        path.push(component.as_os_str());
+    }
+
+    if path.as_os_str().is_empty() {
+        path.push(".");
+    }
+
+    Some(path)
 }
 
 /// 按 workspace root 分组，返回分组下标
