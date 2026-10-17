@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use toml_edit::{DocumentMut, Item};
 
-use crate::text_file;
+use crate::common::text_file;
 
 /// 校验 framework 包存在且包名一致，返回包目录
 pub fn ensure_package(framework: &Path, name: &str) -> Result<PathBuf> {

@@ -3,9 +3,9 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use toml_edit::{DocumentMut, InlineTable, Item, TableLike, Value};
 
+use crate::common::text_file;
 use crate::mode::Mode;
 use crate::plan::RustDepPlan;
-use crate::text_file;
 
 use super::framework;
 

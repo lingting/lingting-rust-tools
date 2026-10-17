@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use yaml_rust2::{Yaml, YamlLoader};
 
-use crate::text_file;
+use crate::common::text_file;
 
 /// pnpm 的发布年龄白名单键名
 const KEY: &str = "minimumReleaseAgeExclude";

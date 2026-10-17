@@ -1,5 +1,6 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use crate::common::path;
 use crate::mode::Mode;
 
 /// Cargo.toml 中一个待切换的 framework 依赖
@@ -63,28 +64,23 @@ impl Plan {
     }
 
     /// 输出计划内容
-    pub fn print(&self, startup: &std::path::Path) {
+    pub fn print(&self, startup: &Path) {
         for item in &self.rust {
-            println!("{}", display_path(&item.file, startup));
+            println!("{}", path::to_slash(display_path(&item.file, startup)));
             for dep in &item.deps {
                 println!("  {}: {} → {}", dep.name, dep.current, item.target);
             }
         }
 
         for item in &self.front {
-            println!(
-                "{}/",
-                display_path(&item.directory, startup).replace('\\', "/")
-            );
+            let directory = path::to_slash(display_path(&item.directory, startup));
+            println!("{directory}/");
             println!("  lri: {} → {}", item.current, item.target);
         }
     }
 }
 
 /// 相对运行目录展示路径，位于运行目录之外时保留绝对路径
-fn display_path(path: &std::path::Path, startup: &std::path::Path) -> String {
-    path.strip_prefix(startup)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .to_string()
+fn display_path<'a>(path: &'a Path, startup: &Path) -> &'a Path {
+    path.strip_prefix(startup).unwrap_or(path)
 }

@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 
-use crate::command;
+use crate::common::command;
+use crate::common::path;
 
 /// 确认运行目录位于 Git 仓库内，并返回仓库根目录
 pub fn repository_root(startup: &Path) -> Result<PathBuf> {
@@ -19,9 +20,7 @@ pub fn repository_root(startup: &Path) -> Result<PathBuf> {
 /// 全部目标文件必须已有提交记录，且当前没有未提交变更
 pub fn ensure_ready(root: &Path, files: &[PathBuf]) -> Result<()> {
     for file in files {
-        let name = relative_path(root, file)?
-            .to_string_lossy()
-            .replace('\\', "/");
+        let name = path::to_slash(&relative_path(root, file)?);
 
         let status = command::run(root, "git", &["status", "--porcelain", "--", &name])?;
         if !status.trim().is_empty() {

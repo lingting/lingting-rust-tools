@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
-use crate::text_file;
+use crate::common::text_file;
 
 /// 一份 package.json
 #[derive(Debug, Clone)]

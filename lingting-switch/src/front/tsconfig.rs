@@ -5,9 +5,9 @@ use jsonc_parser::ast::{Object, ObjectProp, Value};
 use jsonc_parser::common::Ranged;
 use jsonc_parser::{CollectOptions, ParseOptions, parse_to_ast};
 
+use crate::common::source_edit::{self, Edit};
+use crate::common::text_file;
 use crate::mode::Mode;
-use crate::source_edit::{self, Edit};
-use crate::text_file;
 
 use super::{LRI_ALIAS, LRI_DIRECTORY, LRI_PACKAGE};
 

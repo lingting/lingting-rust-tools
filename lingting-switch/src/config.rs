@@ -44,8 +44,8 @@ fn convert(key: &str, source: &str) -> Result<PathBuf> {
         bail!("[{key}] 路径值异常!");
     }
 
-    let path = PathBuf::from(trim);
-    let canonicalize = path
+    let directory = PathBuf::from(trim);
+    let canonicalize = directory
         .canonicalize()
         .with_context(|| format!("[{key}] 该路径不存在: {trim}"))?;
 

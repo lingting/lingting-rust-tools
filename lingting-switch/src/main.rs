@@ -1,7 +1,7 @@
 mod app;
 mod apply;
 mod cli;
-mod command;
+mod common;
 mod config;
 mod front;
 mod git;
@@ -9,8 +9,6 @@ mod junction;
 mod mode;
 mod plan;
 mod rust;
-mod source_edit;
-mod text_file;
 
 fn main() {
     // 调试构建默认输出异常回溯

@@ -4,9 +4,9 @@ use anyhow::{Context, Result, bail};
 use tree_sitter::{Node, Parser, Tree};
 use tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
 
+use crate::common::source_edit::{self, Edit};
+use crate::common::text_file;
 use crate::mode::Mode;
-use crate::source_edit::{self, Edit};
-use crate::text_file;
 
 use super::{LRI_ALIAS, LRI_DIRECTORY, LRI_PACKAGE};
 
