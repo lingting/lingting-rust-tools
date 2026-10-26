@@ -12,12 +12,22 @@ use super::framework;
 /// Cargo.toml 中直接声明依赖的表
 const TABLES: [&str; 3] = ["dependencies", "dev-dependencies", "build-dependencies"];
 
+/// 依赖来源：决定本地目录与版本号的解析位置
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Source {
+    /// framework-* 依赖，对应 LINGTING_SWITCH_FRAMEWORK
+    Framework,
+    /// lingting-gpui-* 依赖，对应 LINGTING_SWITCH_GPUI
+    Gpui,
+}
+
 /// 一个参与切换的 framework 依赖
 #[derive(Debug, Clone)]
 pub struct FrameworkDep {
     pub table: Vec<String>,
     pub key: String,
     pub name: String,
+    pub source: Source,
     pub mode: Mode,
 }
 
@@ -32,9 +42,9 @@ pub fn scan(path: &Path) -> Result<Vec<FrameworkDep>> {
         };
 
         for (key, value) in table_like.iter() {
-            if !is_framework(key, value) {
+            let Some(source) = source(key, value) else {
                 continue;
-            }
+            };
 
             // workspace = true 由 workspace 层声明，不参与切换
             if value.get("workspace").and_then(Item::as_bool) == Some(true) {
@@ -46,6 +56,7 @@ pub fn scan(path: &Path) -> Result<Vec<FrameworkDep>> {
                 table: table.clone(),
                 key: key.to_string(),
                 name: name.to_string(),
+                source,
                 mode: dep_mode(key, value)?,
             });
         }
@@ -91,20 +102,28 @@ fn dep_mode(key: &str, value: &Item) -> Result<Mode> {
     bail!("依赖 {key} 未声明 path 或 version，无法识别模式")
 }
 
-/// 依赖键名或 package 字段指向 framework
-fn is_framework(key: &str, value: &Item) -> bool {
-    if is_framework_name(key) {
-        return true;
+/// 依赖键名或 package 字段指向的本地来源
+fn source(key: &str, value: &Item) -> Option<Source> {
+    if let Some(source) = name_source(key) {
+        return Some(source);
     }
 
     value
         .get("package")
         .and_then(Item::as_str)
-        .is_some_and(is_framework_name)
+        .and_then(name_source)
 }
 
-fn is_framework_name(name: &str) -> bool {
-    name == "framework" || name.starts_with("framework-")
+fn name_source(name: &str) -> Option<Source> {
+    if name == "framework" || name.starts_with("framework-") {
+        return Some(Source::Framework);
+    }
+
+    if name.starts_with("lingting-gpui-") {
+        return Some(Source::Gpui);
+    }
+
+    None
 }
 
 /// 依赖直接声明的表、workspace 层以及 target 层下的表

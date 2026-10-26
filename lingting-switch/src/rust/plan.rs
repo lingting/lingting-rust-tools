@@ -7,7 +7,8 @@ use crate::config::LocalDirectorys;
 use crate::mode::Mode;
 use crate::plan::{RustDepPlan, RustPlanItem};
 
-use super::{cargo_file, framework};
+use super::cargo_file::{self, Source};
+use super::framework;
 
 /// 扫描 Rust 项目并生成计划
 pub fn plan(
@@ -16,18 +17,24 @@ pub fn plan(
     target: Option<Mode>,
 ) -> Result<Vec<RustPlanItem>> {
     let mut scanned = vec![];
-    let mut detection = None;
+    let mut framework_mode = None;
+    let mut gpui_mode = None;
     for file in cargo_tomls(startup)? {
         let deps = cargo_file::scan(&file)?;
         if deps.is_empty() {
             continue;
         }
 
-        // 未指定目标模式时，全部依赖必须处于同一模式，否则无法反向切换
+        // 未指定目标模式时，同一来源的依赖必须处于同一模式，否则无法反向切换
         if target.is_none() {
             for dep in &deps {
-                if let Some(mode) = detection {
-                    if mode != dep.mode {
+                let slot = match dep.source {
+                    Source::Framework => &mut framework_mode,
+                    Source::Gpui => &mut gpui_mode,
+                };
+
+                if let Some(mode) = slot {
+                    if *mode != dep.mode {
                         bail!(
                             "检测到混合模式: {} 的 {} 为 {}，与 {} 不一致；请用参数指定目标模式",
                             file.display(),
@@ -37,7 +44,7 @@ pub fn plan(
                         );
                     }
                 } else {
-                    detection = Some(dep.mode);
+                    *slot = Some(dep.mode);
                 }
             }
         }
@@ -45,9 +52,10 @@ pub fn plan(
         scanned.push((file, deps));
     }
 
+    // 目标模式以 framework 的模式为准，两类依赖统一反向；没有 framework 依赖时退回 gpui
     let target = match target {
         Some(target) => target,
-        None => match detection {
+        None => match framework_mode.or(gpui_mode) {
             Some(mode) => mode.reverse(),
             None => return Ok(vec![]),
         },
@@ -61,9 +69,13 @@ pub fn plan(
                 continue;
             }
 
+            let root = match dep.source {
+                Source::Framework => &directorys.framework,
+                Source::Gpui => &directorys.gpui,
+            };
             let value = match target {
-                Mode::Local => local_path(directorys, &dep.name, &file)?,
-                Mode::Dependency => framework::version(&directorys.framework, &dep.name)?,
+                Mode::Local => local_path(root, &dep.name, &file)?,
+                Mode::Dependency => framework::version(root, &dep.name)?,
             };
 
             plans.push(RustDepPlan {
@@ -100,8 +112,8 @@ fn cargo_tomls(startup: &Path) -> Result<Vec<PathBuf>> {
 }
 
 /// 本地模式下依赖的 path 值：相对 Cargo.toml 所在目录，无法相对化时退回绝对路径
-fn local_path(directorys: &LocalDirectorys, name: &str, file: &Path) -> Result<String> {
-    let directory = framework::ensure_package(&directorys.framework, name)?;
+fn local_path(root: &Path, name: &str, file: &Path) -> Result<String> {
+    let directory = framework::ensure_package(root, name)?;
     let base = file
         .parent()
         .with_context(|| format!("{} 没有上级目录", file.display()))?;

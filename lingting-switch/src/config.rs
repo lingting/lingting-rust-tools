@@ -5,14 +5,17 @@ use anyhow::{Context, Result, bail};
 
 const FRAMEWORK_KEY: &str = "LINGTING_SWITCH_FRAMEWORK";
 const LRI_KEY: &str = "LINGTING_SWITCH_LRI";
+const GPUI_KEY: &str = "LINGTING_SWITCH_GPUI";
 const FRAMEWORK_DEFAULT: &str = r"D:\code\lingting\lingting-rust-framework";
 const LRI_DEFAULT: &str = r"D:\code\lingting\lingting-react-ui\src";
+const GPUI_DEFAULT: &str = r"D:\code\lingting\lingting-gpui-kit";
 
-/// 本地 framework 与 lri 的目录
+/// 本地 framework、lri 与 gpui 的目录
 #[derive(Debug, Clone)]
 pub struct LocalDirectorys {
     pub framework: PathBuf,
     pub lri: PathBuf,
+    pub gpui: PathBuf,
 }
 
 impl LocalDirectorys {
@@ -28,6 +31,7 @@ pub fn local_directorys() -> Result<LocalDirectorys> {
     Ok(LocalDirectorys {
         framework: convert(FRAMEWORK_KEY, &source(FRAMEWORK_KEY, FRAMEWORK_DEFAULT))?,
         lri: convert(LRI_KEY, &source(LRI_KEY, LRI_DEFAULT))?,
+        gpui: convert(GPUI_KEY, &source(GPUI_KEY, GPUI_DEFAULT))?,
     })
 }
 
